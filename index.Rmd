@@ -10,17 +10,17 @@ The human activity recognition research has traditionally focused on discriminat
 
 The goal of this project is to predict the manner in which they did the exercise. This is the **classe** variable in the training set. After building the model and test with the test data, we have the following findings:
 
-- **Preprocessing** dataset is necessary in building models. Initially there are *146* predictors in dataset. After preprocessing, we reduce the number of predictor to *53*.
+- **Pre-processing** dataset is necessary in building models. Initially there are *146* predictors in dataset. After pre-processing, we reduce the number of predictor to *53*.
 - ```Random Forest``` method works very well in this project. The out of sample error is only *0.0024(0.24%)*. However, we still have to do some experiments for other possible candidates to pick up the best choices.
 - **Cross Validation** do have a little improvement in the final model. But cross validation will make training time longer. So we need to balance between folds/repeat times and accuracy of the model.
 
-### Preprocessing Data
+### Pre-processing Data
 ```{r, warning=FALSE,message=FALSE}
 # load library
 library(caret)
 ```
 
-1. Read the training data first:
+1. **Reading data**: Read the training data first:
 ```{r}
 # read data
 pml <- read.csv("pml-training.csv", stringsAsFactors = F)
@@ -28,7 +28,7 @@ data <- pml[,-(1:5)]
 rm(pml)
 ```
 
-2. We can see some variables should be *number* but read as *char*. So we have to change their type to number:
+2. **Cleaning data (type transformation)**: We can see some variables should be *number* but read as *char*. So we have to change their type to number:
 ```{r, warning=FALSE}
 # some variable is numeric but wrongly read as char
 data$kurtosis_roll_belt <- as.numeric(data$kurtosis_roll_belt)
@@ -57,7 +57,7 @@ data$max_yaw_forearm <- as.numeric(data$max_yaw_forearm)
 data$min_yaw_forearm <- as.numeric(data$min_yaw_forearm)
 ```
 
-3. Some variables with strange or meaningless values, so we remove them from our dataset:
+3. **Cleaning data (no use variables)**: Some variables with strange or meaningless values, so we remove them from our dataset:
 ```{r}
 # remove variables with strange or meaningless values:
 data <- subset(data, select = -c(kurtosis_yaw_belt, skewness_yaw_belt,
@@ -67,7 +67,7 @@ data <- subset(data, select = -c(kurtosis_yaw_belt, skewness_yaw_belt,
                                  amplitude_yaw_forearm))
 ```
 
-4. Because there is still one char variable, so we create a dummy variable:
+4. **Dummy variables**: Because there is still one char variable, so we create a dummy variable:
 ```{r}
 # set dummy variables
 data$new_window <- as.factor(data$new_window)
@@ -76,24 +76,23 @@ dummies <- dummyVars(classe ~ ., data = data)
 df <- as.data.frame(predict(dummies, newdata = data))
 ```
 
-5. We don't have any information about missing values, so we assume they should be 0:
+5. **Imputing missing values**: We don't have any information about missing values, so we assume they should be 0:
 ```{r}
 # impute NA as 0
 df[is.na(df)] <- 0
 ```
 
-6. To reduce the number of predictors, we remove some zero- and near zero-variance predictors:
+6. **Zero- and Near Zero-Variance**: To reduce the number of predictors, we remove some zero- and near zero-variance predictors:
 ```{r}
 # Zero- and Near Zero-Variance Predictors
 nzv <- nearZeroVar(df)
 df <- df[, -nzv]
 ```
 
-
 ### Training the Model
-After preprocessing, only 53 predictors left in our dataset. So we start training our model.
+After pre-ocessing, only 53 predictors left in our dataset. So we start training our model.
 
-1. Split data to training set and testing set:
+1. **Data Splitting**: Split data to training set and testing set:
 ```{r}
 #split to training set and data set
 set.seed(99889)
@@ -104,14 +103,14 @@ testingX <- df[-inTrain,]
 testingY <- data$classe[-inTrain]
 ```
 
-2. Cross Validation: we use ```repeatedcv``` for repeated k-fold cross-validation(repeat 10 times and k = 10). 
+2. **Cross Validation**: we use ```repeatedcv``` for repeated k-fold cross-validation(repeat 10 times and k = 10). 
 ```{r}
 # use trainControl to control the resampling
 # repeated(10 times) K(K=10) fold cross validation
 ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 10, classProbs = TRUE)
 ```
 
-3. Start training by ```Random Forest``` model. We choose this model by following steps:
+3. **Training**: Start training by ```Random Forest``` model. We choose this model by following steps:
   - First, this is a classification problem with multiple classes. So the ```Multiple Logistic Regression```, ```Tree-Based method``` and ``Support Vector Machine`` are 3 possible options we can use.
   - Second, we tried 3 Multiple Logistic Regression algorithms: LDA, QDA and GBM. LDA has poor prediction capability(accuracy < 80%). QDA is better in accuracy(around 89%). GBM spent a very long time in training but didn't do a better job.
   - Then we tried Support Vector Machine with linear kernel. It also has poor prediction capability(accuracy < 80%), so we will not use it.
@@ -141,7 +140,7 @@ The accuracy is **0.9976**, so our out of sample error is ```1 - 0.9976 = 0.0024
 ### Testing
 After building the model, we are ready to test.
 
-First, we read the testing data. Then we still have to preprocess the data as we did in building the model.
+First, we read the testing data. We still have to pre-process the data as we did in building the model.
 ```{r}
 # start testing
 pml_test <- read.csv("pml-testing.csv", stringsAsFactors = F)

@@ -62,24 +62,24 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <p>The human activity recognition research has traditionally focused on discriminating between different activities, i.e. to predict “which” activity was performed at a specific point in time. This project use the <strong>Weight Lifting Exercises</strong> dataset to investigate “how (well)” an activity was performed by the wearer. The detail information about this dataset can refer to: <a href="http://groupware.les.inf.puc-rio.br/har"><a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a></a></p>
 <p>The goal of this project is to predict the manner in which they did the exercise. This is the <strong>classe</strong> variable in the training set. After building the model and test with the test data, we have the following findings:</p>
 <ul>
-<li><strong>Preprocessing</strong> dataset is necessary in building models. Initially there are <em>146</em> predictors in dataset. After preprocessing, we reduce the number of predictor to <em>53</em>.</li>
+<li><strong>Pre-processing</strong> dataset is necessary in building models. Initially there are <em>146</em> predictors in dataset. After pre-processing, we reduce the number of predictor to <em>53</em>.</li>
 <li><code>Random Forest</code> method works very well in this project. The out of sample error is only <em>0.0024(0.24%)</em>. However, we still have to do some experiments for other possible candidates to pick up the best choices.</li>
 <li><strong>Cross Validation</strong> do have a little improvement in the final model. But cross validation will make training time longer. So we need to balance between folds/repeat times and accuracy of the model.</li>
 </ul>
 </div>
-<div id="preprocessing-data" class="section level3">
-<h3>Preprocessing Data</h3>
+<div id="pre-processing-data" class="section level3">
+<h3>Pre-processing Data</h3>
 <pre class="r"><code># load library
 library(caret)</code></pre>
 <ol style="list-style-type: decimal">
-<li>Read the training data first:</li>
+<li><strong>Reading data</strong>: Read the training data first:</li>
 </ol>
 <pre class="r"><code># read data
 pml &lt;- read.csv(&quot;pml-training.csv&quot;, stringsAsFactors = F)
 data &lt;- pml[,-(1:5)]
 rm(pml)</code></pre>
 <ol start="2" style="list-style-type: decimal">
-<li>We can see some variables should be <em>number</em> but read as <em>char</em>. So we have to change their type to number:</li>
+<li><strong>Cleaning data (type transformation)</strong>: We can see some variables should be <em>number</em> but read as <em>char</em>. So we have to change their type to number:</li>
 </ol>
 <pre class="r"><code># some variable is numeric but wrongly read as char
 data$kurtosis_roll_belt &lt;- as.numeric(data$kurtosis_roll_belt)
@@ -107,7 +107,7 @@ data$skewness_pitch_forearm &lt;- as.numeric(data$skewness_pitch_forearm)
 data$max_yaw_forearm &lt;- as.numeric(data$max_yaw_forearm)
 data$min_yaw_forearm &lt;- as.numeric(data$min_yaw_forearm)</code></pre>
 <ol start="3" style="list-style-type: decimal">
-<li>Some variables with strange or meaningless values, so we remove them from our dataset:</li>
+<li><strong>Cleaning data (no use variables)</strong>: Some variables with strange or meaningless values, so we remove them from our dataset:</li>
 </ol>
 <pre class="r"><code># remove variables with strange or meaningless values:
 data &lt;- subset(data, select = -c(kurtosis_yaw_belt, skewness_yaw_belt,
@@ -116,7 +116,7 @@ data &lt;- subset(data, select = -c(kurtosis_yaw_belt, skewness_yaw_belt,
                                  kurtosis_yaw_forearm, skewness_yaw_forearm,
                                  amplitude_yaw_forearm))</code></pre>
 <ol start="4" style="list-style-type: decimal">
-<li>Because there is still one char variable, so we create a dummy variable:</li>
+<li><strong>Dummy variables</strong>: Because there is still one char variable, so we create a dummy variable:</li>
 </ol>
 <pre class="r"><code># set dummy variables
 data$new_window &lt;- as.factor(data$new_window)
@@ -124,12 +124,12 @@ data$classe &lt;- as.factor(data$classe)
 dummies &lt;- dummyVars(classe ~ ., data = data)
 df &lt;- as.data.frame(predict(dummies, newdata = data))</code></pre>
 <ol start="5" style="list-style-type: decimal">
-<li>We don’t have any information about missing values, so we assume they should be 0:</li>
+<li><strong>Imputing missing values</strong>: We don’t have any information about missing values, so we assume they should be 0:</li>
 </ol>
 <pre class="r"><code># impute NA as 0
 df[is.na(df)] &lt;- 0</code></pre>
 <ol start="6" style="list-style-type: decimal">
-<li>To reduce the number of predictors, we remove some zero- and near zero-variance predictors:</li>
+<li><strong>Zero- and Near Zero-Variance</strong>: To reduce the number of predictors, we remove some zero- and near zero-variance predictors:</li>
 </ol>
 <pre class="r"><code># Zero- and Near Zero-Variance Predictors
 nzv &lt;- nearZeroVar(df)
@@ -137,9 +137,9 @@ df &lt;- df[, -nzv]</code></pre>
 </div>
 <div id="training-the-model" class="section level3">
 <h3>Training the Model</h3>
-<p>After preprocessing, only 53 predictors left in our dataset. So we start training our model.</p>
+<p>After pre-ocessing, only 53 predictors left in our dataset. So we start training our model.</p>
 <ol style="list-style-type: decimal">
-<li>Split data to training set and testing set:</li>
+<li><strong>Data Splitting</strong>: Split data to training set and testing set:</li>
 </ol>
 <pre class="r"><code>#split to training set and data set
 set.seed(99889)
@@ -149,13 +149,13 @@ trainingY &lt;- data$classe[inTrain]
 testingX &lt;- df[-inTrain,]
 testingY &lt;- data$classe[-inTrain]</code></pre>
 <ol start="2" style="list-style-type: decimal">
-<li>Cross Validation: we use <code>repeatedcv</code> for repeated k-fold cross-validation(repeat 10 times and k = 10).</li>
+<li><strong>Cross Validation</strong>: we use <code>repeatedcv</code> for repeated k-fold cross-validation(repeat 10 times and k = 10).</li>
 </ol>
 <pre class="r"><code># use trainControl to control the resampling
 # repeated(10 times) K(K=10) fold cross validation
 ctrl &lt;- trainControl(method = &quot;repeatedcv&quot;, number = 10, repeats = 10, classProbs = TRUE)</code></pre>
 <ol start="3" style="list-style-type: decimal">
-<li>Start training by <code>Random Forest</code> model. We choose this model by following steps:</li>
+<li><strong>Training</strong>: Start training by <code>Random Forest</code> model. We choose this model by following steps:</li>
 </ol>
 <ul>
 <li>First, this is a classification problem with multiple classes. So the <code>Multiple Logistic Regression</code>, <code>Tree-Based method</code> and <code>Support Vector Machine</code> are 3 possible options we can use.</li>
@@ -237,7 +237,7 @@ ctrl &lt;- trainControl(method = &quot;repeatedcv&quot;, number = 10, repeats = 
 <div id="testing" class="section level3">
 <h3>Testing</h3>
 <p>After building the model, we are ready to test.</p>
-<p>First, we read the testing data. Then we still have to preprocess the data as we did in building the model.</p>
+<p>First, we read the testing data. We still have to pre-process the data as we did in building the model.</p>
 <pre class="r"><code># start testing
 pml_test &lt;- read.csv(&quot;pml-testing.csv&quot;, stringsAsFactors = F)
 data_test &lt;- pml_test[,-(1:5)]
